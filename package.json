@@ -1,6 +1,6 @@
 {
   "name": "sync-files",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Synchronize files or folders locally, with a watch option",
   "main": "index.js",
   "scripts": {},
