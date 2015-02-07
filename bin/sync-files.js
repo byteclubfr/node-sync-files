@@ -10,10 +10,12 @@ var pkg = require("../package.json");
 
 var opts = {
   "boolean": ["help", "delete", "watch", "version", "verbose", "notify-update"],
+  "string": ["depth"],
   "alias": {
     "help": "h",
     "watch": "w",
-    "verbose": "v"
+    "verbose": "v",
+    "depth": "d"
   },
   "help": {
     "help": "Show help and exit",
@@ -21,14 +23,16 @@ var opts = {
     "watch": "Watch changes in source and keep target in sync",
     "version": "Show version and exit",
     "verbose": "Moar output",
-    "notify-update": "Enable update notification"
+    "notify-update": "Enable update notification",
+    "depth": "Maximum depth if you have performance issues"
   },
   "default": {
     "help": false,
     "watch": false,
     "delete": true,
     "verbose": false,
-    "notify-update": true
+    "notify-update": true,
+    "depth": Infinity
   },
   "stopEarly": true,
   "unknown": function onUnknown (option) {
@@ -89,7 +93,8 @@ if (argv["notify-update"]) {
 
 sync(argv._[0], argv._[1], {
   "watch": argv.watch,
-  "delete": argv.delete
+  "delete": argv.delete,
+  "depth": Number(argv.depth)
 }, function (event, data) {
   switch (event) {
     case "error":

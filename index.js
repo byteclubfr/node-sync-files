@@ -17,6 +17,12 @@ module.exports = function (source, target, opts, notify) {
     return false;
   }
 
+  if (typeof opts.depth !== "number" || isNaN(opts.depth)) {
+    notify("error", "Expected valid number for option 'depth'");
+    return false;
+  }
+
+  // Browse
   notify("error", "Not implemented yet");
   return false;
 };
