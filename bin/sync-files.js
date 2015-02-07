@@ -4,6 +4,7 @@
 
 var minimist = require("minimist");
 var updateNotifier = require("update-notifier");
+var chalk = require("chalk");
 var sync = require("../");
 
 var pkg = require("../package.json");
@@ -16,6 +17,9 @@ var opts = {
     "watch": "w",
     "verbose": "v",
     "depth": "d"
+  },
+  "type": {
+    "depth": "number"
   },
   "help": {
     "help": "Show help and exit",
@@ -41,28 +45,44 @@ var opts = {
       return;
     }
 
-    console.error("Unknown option '" + option + "'");
+    console.error(chalk.bold.red("Unknown option '" + option + "'"));
     help();
     process.exit(1);
   }
 };
 
 function help () {
-  console.log("%s - v. %s", pkg.name, pkg.version);
+  console.log("%s - v. %s", chalk.bold(pkg.name), chalk.cyan(pkg.version));
   console.log(pkg.description);
-  console.log("\n");
-  console.log("Usage: " + pkg.name + " [options] <source> <target>");
   console.log("");
-  opts.boolean.forEach(function (opt) {
-    var key = "--[no-]" + opt;
+  console.log("Usage: " + chalk.bold(pkg.name) + " [" + chalk.blue("options") + "] <" + chalk.yellow("source") + "> <" + chalk.yellow("target") + ">");
+  console.log("\t%s is a file or folder which content will be mirrored to %s", chalk.yellow("source"), chalk.yellow("target"));
+  console.log("");
+  var keys = opts.boolean.map(function (opt) {
+    var key = chalk.blue("--[no-]" + opt);
     if (Array.isArray(opts.alias[opt]) && opts.alias[opt].length > 0) {
-      key += ", " + opts.alias[opt].map(function (a) { return "[--no]-" + a; }).join(", ");
+      key += ", " + opts.alias[opt].map(function (a) { return chalk.blue("[--no]-" + a); }).join(", ");
     } else if (opts.alias[opt]) {
-      key += ", [--no]-" + opts.alias[opt];
+      key += ", " + chalk.blue("[--no]-" + opts.alias[opt]);
     }
-    console.log(key);
-    if (opts.help[opt]) {
-      console.log("\t%s", opts.help[opt]);
+    return {opt: opt, key: key};
+  }).concat(opts.string.map(function (opt) {
+    var arg = "<" + (opts.type[opt] || "value") + ">";
+    var key = chalk.blue("--" + opt) + "=" + arg;
+    if (Array.isArray(opts.alias[opt]) && opts.alias[opt].length > 0) {
+      key += ", " + opts.alias[opt].map(function (a) { return chalk.blue("-" + a) + " " + arg; }).join(", ");
+    } else if (opts.alias[opt]) {
+      key += ", " + chalk.blue("-" + opts.alias[opt]) + " " + arg;
+    }
+    return {opt: opt, key: key};
+  }));
+  keys.forEach(function (k) {
+    console.log(k.key);
+    if (opts.help[k.opt]) {
+      console.log("\t%s", opts.help[k.opt]);
+    }
+    if (opts.default[k.opt] !== undefined) {
+      console.log("\t" + chalk.dim("Default: " + opts.default[k.opt]));
     }
     console.log("");
   });
@@ -72,7 +92,7 @@ function help () {
 var argv = minimist(process.argv.slice(2), opts);
 
 if (argv._.length !== 2) {
-  console.error("Expects exactly two arguments, received " + argv._.length);
+  console.error(chalk.bold.red("Expects exactly two arguments, received " + argv._.length));
   help();
   process.exit(1);
 }
@@ -98,8 +118,8 @@ sync(argv._[0], argv._[1], {
 }, function (event, data) {
   switch (event) {
     case "error":
-      console.error(data);
-      process.exit(2);
+      console.error(chalk.bold.red(data.message || data));
+      process.exit(data.code || 2);
       break;
     default:
       if (argv.verbose) {

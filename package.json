@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/lmtm/node-sync-files",
   "dependencies": {
+    "chalk": "^0.5.1",
     "chokidar": "^1.0.0-rc3",
     "lodash": "^3.1.0",
     "minimist": "^1.1.0",
