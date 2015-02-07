@@ -101,12 +101,6 @@ function help () {
 
 var argv = minimist(process.argv.slice(2), opts);
 
-if (argv._.length !== 2) {
-  console.error(chalk.bold.red("Expects exactly two arguments, received " + argv._.length));
-  help();
-  process.exit(1);
-}
-
 if (argv.help) {
   help();
   process.exit(0);
@@ -115,6 +109,12 @@ if (argv.help) {
 if (argv.version) {
   console.log(pkg.version);
   process.exit(0);
+}
+
+if (argv._.length !== 2) {
+  console.error(chalk.bold.red("Expects exactly two arguments, received " + argv._.length));
+  help();
+  process.exit(1);
 }
 
 if (argv["notify-update"]) {
