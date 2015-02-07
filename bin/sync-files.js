@@ -28,7 +28,7 @@ var opts = {
     "version": "Show version and exit",
     "verbose": "Moar output",
     "notify-update": "Enable update notification",
-    "depth": "Maximum depth if you have performance issues"
+    "depth": "Maximum depth if you have performance issues (not everywhere yet: only on existing mirrors and watch scenario)"
   },
   "default": {
     "help": false,
