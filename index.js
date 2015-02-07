@@ -10,11 +10,6 @@ module.exports = function (source, target, opts, notify) {
     "delete": false
   });
 
-  if (opts.delete) {
-    notify("error", "Option 'delete' not implemented yet");
-    return false;
-  }
-
   if (opts.watch) {
     notify("error", "Option 'watch' not implemented yet");
     return false;
@@ -30,7 +25,17 @@ module.exports = function (source, target, opts, notify) {
 };
 
 function mirror (source, target, opts, notify, depth) {
-  var sourceStat = fs.statSync(source);
+  // Specifc case where the very source is gone
+  var sourceStat;
+  try {
+    sourceStat = fs.statSync(source);
+  } catch (e) {
+    // Source not found: destroy target?
+    if (fs.existsSync(target)) {
+      return deleteExtra(target, opts, notify);
+    }
+  }
+
   var targetStat;
   try {
     targetStat = fs.statSync(target);
@@ -38,14 +43,24 @@ function mirror (source, target, opts, notify, depth) {
     // Target not found? good, direct copy
     return copy(source, target, opts, notify);
   }
+
   if (sourceStat.isDirectory() && targetStat.isDirectory()) {
     if (depth === opts.depth) {
       notify("max-depth", source);
       return true;
     }
-    return fs.readdirSync(source).every(function (f) {
+
+    // copy from source to target
+    var copied = fs.readdirSync(source).every(function (f) {
       return mirror(path.join(source, f), path.join(target, f), opts, notify, depth + 1);
     });
+
+    // check for extraneous
+    var deletedExtra = fs.readdirSync(target).every(function (f) {
+      return fs.existsSync(path.join(source, f)) || deleteExtra(path.join(target, f), opts, notify);
+    });
+
+    return copied && deletedExtra;
   } else if (sourceStat.isFile() && targetStat.isFile()) {
     // compare update-time before overwriting
     if (sourceStat.mtime > targetStat.mtime) {
@@ -69,6 +84,15 @@ function mirror (source, target, opts, notify, depth) {
   }
 }
 
+function deleteExtra (fileordir, opts, notify) {
+  if (opts.delete) {
+    return destroy(fileordir, notify);
+  } else {
+    notify("no-delete", fileordir);
+    return true;
+  }
+}
+
 function copy (source, target, opts, notify) {
   notify("copy", [source, target]);
   try {
@@ -81,6 +105,7 @@ function copy (source, target, opts, notify) {
 }
 
 function destroy (fileordir, notify) {
+  notify("remove", fileordir);
   try {
     fs.remove(fileordir);
     return true;
