@@ -3,26 +3,64 @@
 var defaults = require("lodash/object/defaults");
 var fs = require("fs-extra");
 var path = require("path");
+var chokidar = require("chokidar");
+
 
 module.exports = function (source, target, opts, notify) {
   opts = defaults(opts || {}, {
     "watch": false,
-    "delete": false
+    "delete": false,
+    "depth": Infinity
   });
-
-  if (opts.watch) {
-    notify("error", "Option 'watch' not implemented yet");
-    return false;
-  }
 
   if (typeof opts.depth !== "number" || isNaN(opts.depth)) {
     notify("error", "Expected valid number for option 'depth'");
     return false;
   }
 
-  // Browse
-  return mirror(source, target, opts, notify, 0);
+  // Initial mirror
+  var mirrored = mirror(source, target, opts, notify, 0);
+
+  if (!mirrored) {
+    return false;
+  }
+
+  if (opts.watch) {
+    // Watcher to keep in sync from that
+    chokidar.watch(source, {
+      "persistent": true,
+      "depth": opts.depth,
+      "ignoreInitial": true
+      // TODO "ignore": opts.ignore
+    })
+    //.on("raw", console.log.bind(console, "raw"))
+    .on("ready", notify.bind(undefined, "watch", source))
+    .on("add", watcherCopy(source, target, opts, notify))
+    .on("addDir", watcherCopy(source, target, opts, notify))
+    .on("change", watcherCopy(source, target, opts, notify))
+    .on("unlink", watcherDestroy(source, target, opts, notify))
+    .on("unlinkDir", watcherDestroy(source, target, opts, notify))
+    .on("error", watcherError(opts, notify));
+  }
 };
+
+function watcherCopy (source, target, opts, notify) {
+  return function (f, stats) {
+    copy(f, path.join(target, path.relative(source, f)), notify);
+  };
+}
+
+function watcherDestroy (source, target, opts, notify) {
+  return function (f) {
+    deleteExtra(path.join(target, path.relative(source, f)), opts, notify);
+  };
+}
+
+function watcherError (opts, notify) {
+  return function (err) {
+    notify("error", err);
+  };
+}
 
 function mirror (source, target, opts, notify, depth) {
   // Specifc case where the very source is gone
@@ -41,7 +79,7 @@ function mirror (source, target, opts, notify, depth) {
     targetStat = fs.statSync(target);
   } catch (e) {
     // Target not found? good, direct copy
-    return copy(source, target, opts, notify);
+    return copy(source, target, notify);
   }
 
   if (sourceStat.isDirectory() && targetStat.isDirectory()) {
@@ -64,13 +102,13 @@ function mirror (source, target, opts, notify, depth) {
   } else if (sourceStat.isFile() && targetStat.isFile()) {
     // compare update-time before overwriting
     if (sourceStat.mtime > targetStat.mtime) {
-      return copy(source, target, opts, notify);
+      return copy(source, target, notify);
     } else {
       return true;
     }
   } else if (opts.delete) {
     // incompatible types: destroy target and copy
-    return destroy(target, notify) && copy(source, target, opts, notify);
+    return destroy(target, notify) && copy(source, target, notify);
   } else if (sourceStat.isFile() && targetStat.isDirectory()) {
     // incompatible types
     notify("error", "Cannot copy file '" + source + "' to '" + target + "' as existing folder");
@@ -93,7 +131,7 @@ function deleteExtra (fileordir, opts, notify) {
   }
 }
 
-function copy (source, target, opts, notify) {
+function copy (source, target, notify) {
   notify("copy", [source, target]);
   try {
     fs.copySync(source, target);

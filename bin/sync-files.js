@@ -56,6 +56,7 @@ var notifyPriority = {
   "error": "high",
   "copy": "normal",
   "remove": "normal",
+  "watch": "normal",
   "max-depth": "low",
   "no-delete": "low"
 };
@@ -122,7 +123,7 @@ if (argv["notify-update"]) {
 
 var root = process.cwd();
 
-sync(argv._[0], argv._[1], {
+sync(path.resolve(argv._[0]), path.resolve(argv._[1]), {
   "watch": argv.watch,
   "delete": argv.delete,
   "depth": Number(argv.depth)
@@ -146,6 +147,10 @@ sync(argv._[0], argv._[1], {
 
     case "remove":
       console.log("%s %s", chalk.bold("DELETE"), chalk.yellow(path.relative(root, data)));
+      break;
+
+    case "watch":
+      console.log("%s %s", chalk.bold("WATCHING"), chalk.yellow(path.relative(root, data)));
       break;
 
     case "max-depth":
