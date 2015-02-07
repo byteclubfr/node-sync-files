@@ -4,6 +4,9 @@
   "description": "Synchronize files or folders locally, with a watch option",
   "main": "index.js",
   "scripts": {},
+  "bin": {
+    "sync-files": "bin/sync-files.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/lmtm/node-sync-files.git"
