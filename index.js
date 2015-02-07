@@ -1,5 +1,8 @@
-var defaults = require("lodash/object/defaults");
+"use strict";
 
+var defaults = require("lodash/object/defaults");
+var fs = require("fs-extra");
+var path = require("path");
 
 module.exports = function (source, target, opts, notify) {
   opts = defaults(opts || {}, {
@@ -23,6 +26,66 @@ module.exports = function (source, target, opts, notify) {
   }
 
   // Browse
-  notify("error", "Not implemented yet");
-  return false;
+  return mirror(source, target, opts, notify, 0);
 };
+
+function mirror (source, target, opts, notify, depth) {
+  var sourceStat = fs.statSync(source);
+  var targetStat;
+  try {
+    targetStat = fs.statSync(target);
+  } catch (e) {
+    // Target not found? good, direct copy
+    return copy(source, target, opts, notify);
+  }
+  if (sourceStat.isDirectory() && targetStat.isDirectory()) {
+    if (depth === opts.depth) {
+      notify("max-depth", source);
+      return true;
+    }
+    return fs.readdirSync(source).every(function (f) {
+      return mirror(path.join(source, f), path.join(target, f), opts, notify, depth + 1);
+    });
+  } else if (sourceStat.isFile() && targetStat.isFile()) {
+    // compare update-time before overwriting
+    if (sourceStat.mtime > targetStat.mtime) {
+      return copy(source, target, opts, notify);
+    } else {
+      return true;
+    }
+  } else if (opts.delete) {
+    // incompatible types: destroy target and copy
+    return destroy(target, notify) && copy(source, target, opts, notify);
+  } else if (sourceStat.isFile() && targetStat.isDirectory()) {
+    // incompatible types
+    notify("error", "Cannot copy file '" + source + "' to '" + target + "' as existing folder");
+    return false;
+  } else if (sourceStat.isDirectory() && targetStat.isFile()) {
+    // incompatible types
+    notify("error", "Cannot copy folder '" + source + "' to '" + target + "' as existing file");
+    return false;
+  } else {
+    throw new Error("Unexpected case: WTF?");
+  }
+}
+
+function copy (source, target, opts, notify) {
+  notify("copy", [source, target]);
+  try {
+    fs.copySync(source, target);
+    return true;
+  } catch (e) {
+    notify("error", e);
+    return false;
+  }
+}
+
+function destroy (fileordir, notify) {
+  try {
+    fs.remove(fileordir);
+    return true;
+  } catch (e) {
+    notify("error", e);
+    return false;
+  }
+}
