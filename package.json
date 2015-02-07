@@ -1,0 +1,34 @@
+{
+  "name": "sync-files",
+  "version": "1.0.0",
+  "description": "Synchronize files or folders locally, with a watch option",
+  "main": "index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lmtm/node-sync-files.git"
+  },
+  "keywords": [
+    "rsync",
+    "copy",
+    "cp",
+    "cpw",
+    "copyw",
+    "catw",
+    "folder",
+    "directory",
+    "file"
+  ],
+  "author": "Nicolas Chambrier <naholyr@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/lmtm/node-sync-files/issues"
+  },
+  "homepage": "https://github.com/lmtm/node-sync-files",
+  "dependencies": {
+    "chokidar": "^1.0.0-rc3",
+    "lodash": "^3.1.0",
+    "minimist": "^1.1.0",
+    "update-notifier": "^0.3.0"
+  }
+}

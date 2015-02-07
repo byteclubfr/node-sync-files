@@ -1,0 +1,9 @@
+{
+  "env": {
+    "node": true
+  },
+  "rules": {
+    "no-process-exit": 0,
+    "no-use-before-define": 0
+  }
+}
